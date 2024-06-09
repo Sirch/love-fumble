@@ -7,7 +7,6 @@ function Connection:new(node1, node2)
     connection.node2 = node2
     connection.moveSpeed = 50  -- Speed of the moving point in pixels per second
     connection.dots = {}
-    connection.spawnTimer = 0
     connection:calculateLength()
     return connection
 end
@@ -27,14 +26,6 @@ function Connection:calculateLength()
 end
 
 function Connection:update(dt)
-    self.spawnTimer = self.spawnTimer + dt
-    if self.spawnTimer >= 1 then
-        self.spawnTimer = self.spawnTimer - 1
-        if self.node1.counter > 0 then
-            self:spawnDot()
-        end
-    end
-
     self:updateDots(dt)
 end
 

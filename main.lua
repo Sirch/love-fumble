@@ -9,6 +9,7 @@ local lineEnd = {x = 0, y = 0}
 local retractStart = {x = 0, y = 0}
 local retractEnd = {x = 0, y = 0}
 local retractSpeed = 600  -- Pixels per second, increased for faster retraction
+local spawnTimer = 0  -- Timer for spawning dots globally
 
 -- Function declarations
 local initializeNodes
@@ -18,6 +19,7 @@ local selectFirstNode
 local updateSelectedNode
 local updateConnections
 local updateLineRetraction
+local updateDotSpawning
 local drawConnections
 local drawNodes
 local drawDrawingLine
@@ -76,6 +78,7 @@ function love.update(dt)
     updateSelectedNode(dt)
     updateConnections(dt)
     updateLineRetraction(dt)
+    updateDotSpawning(dt)
 end
 
 updateSelectedNode = function(dt)
@@ -105,6 +108,20 @@ updateLineRetraction = function(dt)
             local angle = math.atan2(dy, dx)
             retractStart.x = retractStart.x + moveDistance * math.cos(angle)
             retractStart.y = retractStart.y + moveDistance * math.sin(angle)
+        end
+    end
+end
+
+updateDotSpawning = function(dt)
+    spawnTimer = spawnTimer + dt
+    if spawnTimer >= 1 then
+        spawnTimer = spawnTimer - 1
+        for _, node in ipairs(nodes) do
+            for _, connection in ipairs(node.connections) do
+                if connection.node1.counter > 1 then
+                    connection:spawnDot()
+                end
+            end
         end
     end
 end
