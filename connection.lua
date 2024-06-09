@@ -6,7 +6,8 @@ function Connection:new(node1, node2)
     connection.node1 = node1
     connection.node2 = node2
     connection.moveSpeed = 50  -- Speed of the moving point in pixels per second
-    connection.position = 0  -- Position of the moving point along the line (0 to 1)
+    connection.dots = {}
+    connection.spawnTimer = 0
     connection:calculateLength()
     return connection
 end
@@ -19,12 +20,37 @@ function Connection:calculateLength()
     local endY = self.node2.y - self.node2.radius * math.sin(angle)
 
     self.length = math.sqrt((endX - startX) ^ 2 + (endY - startY) ^ 2)
+    self.startX = startX
+    self.startY = startY
+    self.endX = endX
+    self.endY = endY
 end
 
 function Connection:update(dt)
-    self.position = self.position + self.moveSpeed * dt / self.length
-    if self.position > 1 then
-        self.position = 0
+    self.spawnTimer = self.spawnTimer + dt
+    if self.spawnTimer >= 1 then
+        self.spawnTimer = self.spawnTimer - 1
+        if self.node1.counter > 0 then
+            self:spawnDot()
+        end
+    end
+
+    -- Update dots positions along the line
+    for i = #self.dots, 1, -1 do
+        local dot = self.dots[i]
+        dot.position = dot.position + self.moveSpeed * dt / self.length
+        if dot.position >= 1 then
+            -- Dot reached the end of the line
+            self.node2.counter = self.node2.counter + 1
+            table.remove(self.dots, i)
+        end
+    end
+end
+
+function Connection:spawnDot()
+    if self.node1.counter > 0 then
+        self.node1.counter = self.node1.counter - 1
+        table.insert(self.dots, {position = 0})  -- Position on the line
     end
 end
 
@@ -44,11 +70,27 @@ function Connection:draw()
     love.graphics.line(startX, startY, endX, endY)
     love.graphics.setLineWidth(1)  -- Reset line width to default
 
-    -- Draw the moving point
-    local pointX = startX + self.position * (endX - startX)
-    local pointY = startY + self.position * (endY - startY)
-    love.graphics.setColor(1, 1, 1)  -- White color for the moving point
-    love.graphics.circle("fill", pointX, pointY, 5)
+    -- Draw dots
+    for _, dot in ipairs(self.dots) do
+        local dotX = startX + dot.position * (endX - startX)
+        local dotY = startY + dot.position * (endY - startY)
+        love.graphics.setColor(1, 1, 1)  -- White color for dots
+        love.graphics.circle("fill", dotX, dotY, 5)
+    end
+end
+
+function Connection:isClicked(x, y)
+    -- Calculate the distance from the click to the line segment
+    local dx = self.endX - self.startX
+    local dy = self.endY - self.startY
+    local lengthSquared = dx * dx + dy * dy
+    local t = ((x - self.startX) * dx + (y - self.startY) * dy) / lengthSquared
+    t = math.max(0, math.min(1, t))
+    local closestX = self.startX + t * dx
+    local closestY = self.startY + t * dy
+    local distance = math.sqrt((closestX - x) ^ 2 + (closestY - y) ^ 2)
+
+    return distance < 5  -- Return true if the click is within 5 pixels of the line
 end
 
 return Connection

@@ -7,14 +7,16 @@ function Node:new(x, y, radius)
     node.y = y
     node.radius = radius
     node.selected = false
-    node.counter = 1
+    node.counter = 0  -- Initial counter value set to 0
     node.counterTime = 0
     node.connections = {}
+    node.spawnTimer = 0  -- Timer to handle spawning dots
     return node
 end
 
 function Node:update(dt)
     self.counterTime = self.counterTime + dt
+
     if self.counterTime >= 1 then
         self.counter = self.counter + 1
         self.counterTime = self.counterTime - 1
@@ -29,15 +31,13 @@ function Node:draw()
     end
     love.graphics.circle("line", self.x, self.y, self.radius)
 
-    -- Draw the counter in the center of the selected node
-    if self.selected then
-        love.graphics.setColor(1, 1, 1)  -- White color for text
-        local font = love.graphics.getFont()
-        local text = tostring(self.counter)
-        local textWidth = font:getWidth(text)
-        local textHeight = font:getHeight()  -- Corrected this line to remove the redundant parameter
-        love.graphics.print(text, self.x - textWidth / 2, self.y - textHeight / 2)
-    end
+    -- Draw the counter in the center of the node
+    love.graphics.setColor(1, 1, 1)  -- White color for text
+    local font = love.graphics.getFont()
+    local text = tostring(self.counter)
+    local textWidth = font:getWidth(text)
+    local textHeight = font:getHeight()  -- Corrected this line to remove the redundant parameter
+    love.graphics.print(text, self.x - textWidth / 2, self.y - textHeight / 2)
 end
 
 function Node:isInside(x, y)

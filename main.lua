@@ -131,6 +131,15 @@ function love.mousepressed(x, y, button, istouch, presses)
             lineEnd.x = x
             lineEnd.y = y
         end
+    elseif button == 2 then -- Right mouse button
+        for _, node in ipairs(nodes) do
+            for i = #node.connections, 1, -1 do
+                local connection = node.connections[i]
+                if connection:isClicked(x, y) then
+                    table.remove(node.connections, i)
+                end
+            end
+        end
     end
 end
 
