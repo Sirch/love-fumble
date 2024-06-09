@@ -10,13 +10,11 @@ function Node:new(x, y, radius)
     node.counter = 0  -- Initial counter value set to 0
     node.counterTime = 0
     node.connections = {}
-    node.spawnTimer = 0  -- Timer to handle spawning dots
     return node
 end
 
 function Node:update(dt)
     self.counterTime = self.counterTime + dt
-
     if self.counterTime >= 1 then
         self.counter = self.counter + 1
         self.counterTime = self.counterTime - 1
@@ -24,19 +22,25 @@ function Node:update(dt)
 end
 
 function Node:draw()
+    self:drawNode()
+    self:drawCounter()
+end
+
+function Node:drawNode()
     if self.selected then
         love.graphics.setColor(1, 0, 0)  -- Red color for selected node
     else
         love.graphics.setColor(1, 1, 1)  -- White color for other nodes
     end
     love.graphics.circle("line", self.x, self.y, self.radius)
+end
 
-    -- Draw the counter in the center of the node
+function Node:drawCounter()
     love.graphics.setColor(1, 1, 1)  -- White color for text
     local font = love.graphics.getFont()
     local text = tostring(self.counter)
     local textWidth = font:getWidth(text)
-    local textHeight = font:getHeight()  -- Corrected this line to remove the redundant parameter
+    local textHeight = font:getHeight()
     love.graphics.print(text, self.x - textWidth / 2, self.y - textHeight / 2)
 end
 
