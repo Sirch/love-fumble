@@ -30,6 +30,7 @@ local handleLineRelease
 local getNodeAt
 local connectionExists
 local startLineRetraction
+local getPointOnCircle
 
 function love.load()
     math.randomseed(os.time())
@@ -145,11 +146,14 @@ drawNodes = function()
     end
 end
 
+getPointOnCircle = function(x, y, radius, angle)
+    return x + radius * math.cos(angle), y + radius * math.sin(angle)
+end
+
 drawDrawingLine = function()
     if isDrawingLine then
         local angle = math.atan2(lineEnd.y - selectedNode.y, lineEnd.x - selectedNode.x)
-        local startX = selectedNode.x + selectedNode.radius * math.cos(angle)
-        local startY = selectedNode.y + selectedNode.radius * math.sin(angle)
+        local startX, startY = getPointOnCircle(selectedNode.x, selectedNode.y, selectedNode.radius, angle)
         love.graphics.setColor(1, 0, 0)
         love.graphics.setLineWidth(4)
         love.graphics.line(startX, startY, lineEnd.x, lineEnd.y)
@@ -159,12 +163,11 @@ end
 
 drawRetractingLine = function()
     if isRetractingLine then
-        local angle = math.atan2(retractEnd.y - selectedNode.y, retractEnd.x - selectedNode.x)
-        local startX = selectedNode.x + selectedNode.radius * math.cos(angle)
-        local startY = selectedNode.y + selectedNode.radius * math.sin(angle)
+        local angle = math.atan2(retractEnd.y - retractStart.y, retractEnd.x - retractStart.x)
+        local endX, endY = getPointOnCircle(retractEnd.x, retractEnd.y, selectedNode.radius, angle + math.pi)
         love.graphics.setColor(1, 0, 0)
         love.graphics.setLineWidth(4)
-        love.graphics.line(retractStart.x, retractStart.y, startX, startY)
+        love.graphics.line(retractStart.x, retractStart.y, endX, endY)
         love.graphics.setLineWidth(1)
     end
 end
