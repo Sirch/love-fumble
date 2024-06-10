@@ -1,44 +1,62 @@
 Node = {}
 Node.__index = Node
 
-function Node:new(x, y, radius)
+function Node:new(x, y, radius, owner)
     local node = setmetatable({}, Node)
     node.x = x
     node.y = y
     node.radius = radius
-    node.selected = false
-    node.counter = 0  -- Initial counter value set to 0
-    node.counterTime = 0
+    node.owner = owner or "neutral"  -- owner can be "player" or "neutral"
+    node.value = owner == "player" and 0 or math.random(10, 100)  -- Initial value
+    node.valueTime = 0
     node.connections = {}
     return node
 end
 
 function Node:update(dt)
-    self.counterTime = self.counterTime + dt
-    if self.counterTime >= 1 then
-        self.counter = self.counter + 1
-        self.counterTime = self.counterTime - 1
+    if self.owner == "player" then
+        self.valueTime = self.valueTime + dt
+        if self.valueTime >= 1 then
+            self.value = self.value + 1
+            self.valueTime = self.valueTime - 1
+        end
     end
+end
+
+function Node:hit(x)
+    local oldValue = self.value
+    self.value = math.max(0, self.value - x)
+    print(string.format("Node hit: value decreased from %d to %d", oldValue, self.value))
+    if self.value == 0 then
+        self.owner = "neutral"
+        print("Node ownership changed to neutral")
+    end
+end
+
+function Node:support(x)
+    local oldValue = self.value
+    self.value = self.value + x
+    print(string.format("Node support: value increased from %d to %d", oldValue, self.value))
 end
 
 function Node:draw()
     self:drawNode()
-    self:drawCounter()
+    self:drawValue()
 end
 
 function Node:drawNode()
-    if self.selected then
-        love.graphics.setColor(1, 0, 0)  -- Red color for selected node
+    if self.owner == "player" then
+        love.graphics.setColor(1, 0, 0)  -- Red color for player's node
     else
-        love.graphics.setColor(1, 1, 1)  -- White color for other nodes
+        love.graphics.setColor(1, 1, 1)  -- White color for neutral nodes
     end
     love.graphics.circle("line", self.x, self.y, self.radius)
 end
 
-function Node:drawCounter()
+function Node:drawValue()
     love.graphics.setColor(1, 1, 1)  -- White color for text
     local font = love.graphics.getFont()
-    local text = tostring(self.counter)
+    local text = tostring(self.value)
     local textWidth = font:getWidth(text)
     local textHeight = font:getHeight()
     love.graphics.print(text, self.x - textWidth / 2, self.y - textHeight / 2)

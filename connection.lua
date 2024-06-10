@@ -1,3 +1,5 @@
+local Dot = require("dot")
+
 Connection = {}
 Connection.__index = Connection
 
@@ -5,9 +7,9 @@ function Connection:new(node1, node2)
     local connection = setmetatable({}, Connection)
     connection.node1 = node1
     connection.node2 = node2
-    connection.moveSpeed = 50  -- Speed of the moving point in pixels per second
     connection.dots = {}
     connection:calculateLength()
+    connection.spawnTimer = 0  -- Timer for managing dot spawning
     return connection
 end
 
@@ -26,24 +28,31 @@ function Connection:calculateLength()
 end
 
 function Connection:update(dt)
-    self:updateDots(dt)
-end
+    self.spawnTimer = self.spawnTimer + dt
+    if self.spawnTimer >= 1 then
+        self.spawnTimer = self.spawnTimer - 1
+        self:spawnDot()
+    end
 
-function Connection:updateDots(dt)
     for i = #self.dots, 1, -1 do
-        local dot = self.dots[i]
-        dot.position = dot.position + self.moveSpeed * dt / self.length
-        if dot.position >= 1 then
-            self.node2.counter = self.node2.counter + 1
-            table.remove(self.dots, i)
-        end
+        self.dots[i]:update(dt)
     end
 end
 
 function Connection:spawnDot()
-    if self.node1.counter > 0 then
-        self.node1.counter = self.node1.counter - 1
-        table.insert(self.dots, {position = 0})
+    if self.node1.value > 0 then
+        print(string.format("Spawning dot from %s with value %d", self.node1.owner, self.node1.value))
+        self.node1.value = self.node1.value - 1
+        table.insert(self.dots, Dot:new(self, 0, self.node1.owner))
+    end
+end
+
+function Connection:removeDot(dot)
+    for i = #self.dots, 1, -1 do
+        if self.dots[i] == dot then
+            table.remove(self.dots, i)
+            break
+        end
     end
 end
 
@@ -53,8 +62,8 @@ function Connection:draw()
 end
 
 function Connection:drawLine()
-    if self.node1.selected or self.node2.selected then
-        love.graphics.setColor(1, 0, 0)  -- Red color if one of the nodes is selected
+    if self.node1.owner == "player" or self.node2.owner == "player" then
+        love.graphics.setColor(1, 0, 0)  -- Red color if one of the nodes is owned by the player
     else
         love.graphics.setColor(0, 1, 0)  -- Green color otherwise
     end
@@ -65,11 +74,8 @@ function Connection:drawLine()
 end
 
 function Connection:drawDots()
-    love.graphics.setColor(1, 1, 1)  -- White color for dots
     for _, dot in ipairs(self.dots) do
-        local dotX = self.startX + dot.position * (self.endX - self.startX)
-        local dotY = self.startY + dot.position * (self.endY - self.startY)
-        love.graphics.circle("fill", dotX, dotY, 5)
+        dot:draw()
     end
 end
 
