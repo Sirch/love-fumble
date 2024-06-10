@@ -41,15 +41,15 @@ end
 
 function Node:drawNode()
     if self.owner == "player" then
-        love.graphics.setColor(1, 0, 0)  -- Red color for player's node
+        love.graphics.setColor(1, 0, 0)  -- Red - player's node
     else
-        love.graphics.setColor(1, 1, 1)  -- White color for neutral nodes
+        love.graphics.setColor(1, 1, 1)  -- White - neutral nodes
     end
     love.graphics.circle("line", self.x, self.y, self.radius)
 end
 
 function Node:drawValue()
-    love.graphics.setColor(1, 1, 1)  -- White color for text
+    love.graphics.setColor(1, 1, 1)  -- White colour for text
     local font = love.graphics.getFont()
     local text = tostring(self.value)
     local textWidth = font:getWidth(text)

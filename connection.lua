@@ -62,9 +62,9 @@ end
 
 function Connection:drawLine()
     if self.node1.owner == "player" or self.node2.owner == "player" then
-        love.graphics.setColor(1, 0, 0)  -- Red color if one of the nodes is owned by the player
+        love.graphics.setColor(1, 0, 0)  -- Red colour if one of the nodes is owned by the player
     else
-        love.graphics.setColor(0, 1, 0)  -- Green color otherwise
+        love.graphics.setColor(0, 1, 0)  -- Green colour otherwise
     end
 
     love.graphics.setLineWidth(4)  -- Line thickness doubled

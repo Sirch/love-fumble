@@ -27,7 +27,7 @@ function Dot:handleArrival()
         return  -- Ensure the dot only arrives once
     end
 
-    self.arrived = true  -- Mark the dot as arrived
+    self.arrived = true
     local node2 = self.connection.node2
     node2:dotArrive(self.owner, self.value)
     self.connection:removeDot(self)
@@ -38,7 +38,7 @@ function Dot:draw()
     local endX, endY = self.connection.endX, self.connection.endY
     local dotX = startX + self.position * (endX - startX)
     local dotY = startY + self.position * (endY - startY)
-    love.graphics.setColor(1, 1, 1)  -- White color for dots
+    love.graphics.setColor(1, 1, 1)  -- White colour for dots
     love.graphics.circle("fill", dotX, dotY, 5)
 
     -- Draw the value above the dot
