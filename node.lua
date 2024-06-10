@@ -7,7 +7,7 @@ function Node:new(x, y, radius, owner)
     node.y = y
     node.radius = radius
     node.owner = owner or "neutral"  -- owner can be "player" or "neutral"
-    node.value = owner == "player" and 0 or math.random(10, 100)  -- Initial value
+    node.value = owner == "player" and 10 or math.random(1, 10)  -- Initial value
     node.valueTime = 0
     node.connections = {}
     return node
@@ -23,20 +23,15 @@ function Node:update(dt)
     end
 end
 
-function Node:hit(x)
-    local oldValue = self.value
-    self.value = math.max(0, self.value - x)
-    print(string.format("Node hit: value decreased from %d to %d", oldValue, self.value))
-    if self.value == 0 then
-        self.owner = "neutral"
-        print("Node ownership changed to neutral")
+function Node:dotArrive(owner, value)
+    if owner == self.owner then
+        self.value = self.value + value
+    else
+        self.value = math.max(0, self.value - value)
+        if self.value == 0 then
+            self.owner = owner
+        end
     end
-end
-
-function Node:support(x)
-    local oldValue = self.value
-    self.value = self.value + x
-    print(string.format("Node support: value increased from %d to %d", oldValue, self.value))
 end
 
 function Node:draw()

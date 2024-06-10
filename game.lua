@@ -146,6 +146,16 @@ function Game:handleMousePressed(x, y, button)
 end
 
 function Game:handleLeftClick(x, y)
+    for _, node in ipairs(self.nodes) do
+        if node:isInside(x, y) then
+            if node.owner == "player" then
+                self.selectedNode = node
+                break
+            else
+                return
+            end
+        end
+    end
     if self.selectedNode and self.selectedNode:isInside(x, y) then
         self.isDrawingLine = true
         self.lineEnd.x = x

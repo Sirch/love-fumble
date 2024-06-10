@@ -29,7 +29,7 @@ end
 
 function Connection:update(dt)
     self.spawnTimer = self.spawnTimer + dt
-    if self.spawnTimer >= 1 then
+    if self.spawnTimer > 1 then
         self.spawnTimer = self.spawnTimer - 1
         self:spawnDot()
     end
@@ -40,8 +40,7 @@ function Connection:update(dt)
 end
 
 function Connection:spawnDot()
-    if self.node1.value > 0 then
-        print(string.format("Spawning dot from %s with value %d", self.node1.owner, self.node1.value))
+    if self.node1.value > 1 then
         self.node1.value = self.node1.value - 1
         table.insert(self.dots, Dot:new(self, 0, self.node1.owner))
     end

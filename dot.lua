@@ -28,20 +28,8 @@ function Dot:handleArrival()
     end
 
     self.arrived = true  -- Mark the dot as arrived
-
     local node2 = self.connection.node2
-    print(string.format("Dot from %s to %s with value %d arriving", self.owner, node2.owner, self.value))
-
-    if self.owner ~= node2.owner then
-        node2:hit(self.value)
-        if node2.value == 0 then
-            node2.owner = self.owner
-            print("Node ownership changed to " .. self.owner)
-        end
-    else
-        node2:support(self.value)
-    end
-
+    node2:dotArrive(self.owner, self.value)
     self.connection:removeDot(self)
 end
 
