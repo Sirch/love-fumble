@@ -5,7 +5,7 @@ local game
 function love.load()
     math.randomseed(os.time())
     game = Game:new()
-    game:initializeNodes(4, 20)
+    game:initializeNodes(40, 20)
 end
 
 function love.update(dt)
