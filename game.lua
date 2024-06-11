@@ -70,7 +70,9 @@ end
 function Game:updateConnections(dt)
     for _, node in ipairs(self.nodes) do
         for _, connection in ipairs(node.connections) do
-            connection:update(dt)
+            if node.owner == "player" then
+                connection:update(dt)
+            end
         end
     end
 end
@@ -190,16 +192,21 @@ function Game:handleMouseReleased(x, y, button)
     end
 end
 
+function Game:canConnect(sourceNode, destinationNode)
+    if sourceNode == destinationNode then
+        return false
+    elseif self:connectionExists(sourceNode, destinationNode) then
+        return false
+    else
+        return true
+    end
+end
+
 function Game:handleLineRelease(x, y)
     self.isDrawingLine = false
     local joinedNode = self:getNodeAt(x, y)
-
-    if joinedNode and joinedNode ~= self.selectedNode then
-        if not self:connectionExists(self.selectedNode, joinedNode) then
-            local newConnection = Connection:new(self.selectedNode, joinedNode)
-            self.selectedNode:addConnection(newConnection)
-            joinedNode:addConnection(newConnection)
-        end
+    if joinedNode and self:canConnect(self.selectedNode, joinedNode) then
+        self.selectedNode:addConnection(Connection:new(self.selectedNode, joinedNode))
     else
         self:startLineRetraction(x, y)
     end
@@ -214,14 +221,24 @@ function Game:getNodeAt(x, y)
     return nil
 end
 
+--- Check if a connection exists between two nodes.
+-- @param node1 table The first node.
+-- @param node2 table The second node.
+-- @return boolean True if the connection exists, false otherwise.
 function Game:connectionExists(node1, node2)
-    for _, connection in ipairs(node1.connections) do
-        if (connection.node1 == node1 and connection.node2 == node2) or
-           (connection.node1 == node2 and connection.node2 == node1) then
-            return true
+    -- Helper function to check connections
+    local function hasConnection(node, target)
+        for _, connection in ipairs(node.connections) do
+            if (connection.node1 == node and connection.node2 == target) or
+               (connection.node1 == target and connection.node2 == node) then
+                return true
+            end
         end
+        return false
     end
-    return false
+
+    -- Check connections in both nodes
+    return hasConnection(node1, node2) or hasConnection(node2, node1)
 end
 
 function Game:startLineRetraction(x, y)
