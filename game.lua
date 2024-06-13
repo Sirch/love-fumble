@@ -124,9 +124,36 @@ function Game:drawDrawingLine()
     if self.isDrawingLine and self.selectedNode then
         local angle = math.atan2(self.lineEnd.y - self.selectedNode.y, self.lineEnd.x - self.selectedNode.x)
         local startX, startY = self:getPointOnCircle(self.selectedNode.x, self.selectedNode.y, self.selectedNode.radius, angle)
+
+        -- Initialize the end coordinates as the mouse position
+        local endX, endY = self.lineEnd.x, self.lineEnd.y
+
+        -- Check for intersections with nodes
+        for _, node in ipairs(self.nodes) do
+            if node ~= self.selectedNode then
+                if Utils.lineIntersectsCircle(startX, startY, endX, endY, node.x, node.y, node.radius) then
+                    endX, endY = self:getClosestPointOnCircleIntersection(startX, startY, endX, endY, node.x, node.y, node.radius)
+                    break
+                end
+            end
+        end
+
+        -- Check for intersections with existing connections
+        for _, node in ipairs(self.nodes) do
+            for _, connection in ipairs(node.connections) do
+                if connection.node1 ~= self.selectedNode and connection.node2 ~= self.selectedNode then
+                    if Utils.doLineSegmentsIntersect(startX, startY, endX, endY, connection.startX, connection.startY, connection.endX, connection.endY) then
+                        endX, endY = self:getClosestPointOnLineIntersection(startX, startY, endX, endY, connection.startX, connection.startY, connection.endX, connection.endY)
+                        break
+                    end
+                end
+            end
+        end
+
+        -- Draw the line up to the intersection point
         love.graphics.setColor(1, 0, 0)
         love.graphics.setLineWidth(4)
-        love.graphics.line(startX, startY, self.lineEnd.x, self.lineEnd.y)
+        love.graphics.line(startX, startY, endX, endY)
         love.graphics.setLineWidth(1)
     end
 end
@@ -196,13 +223,37 @@ function Game:handleMouseReleased(x, y, button)
     end
 end
 
--- Connection methods
+
+--- Checks if a line between two nodes intersects any existing connections
+-- @param sourceNode table The source node
+-- @param destinationNode table The destination node
+-- @return boolean True if the line intersects any existing connections, false otherwise
+function Game:doesLineIntersectAnyConnection(sourceNode, destinationNode)
+    for _, node in ipairs(self.nodes) do
+        for _, connection in ipairs(node.connections) do
+            if Utils.doLineSegmentsIntersect(
+                sourceNode.x, sourceNode.y, destinationNode.x, destinationNode.y,
+                connection.startX, connection.startY, connection.endX, connection.endY
+            ) then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+--- Checks if a connection can be made between two nodes
+-- @param sourceNode table The source node
+-- @param destinationNode table The destination node
+-- @return boolean True if the connection can be made, false otherwise
 function Game:canConnect(sourceNode, destinationNode)
     if sourceNode == destinationNode then
         return false
     elseif self:connectionExists(sourceNode, destinationNode) then
         return false
     elseif Utils.doesLineIntersectAnyNode(self, sourceNode, destinationNode) then
+        return false
+    elseif self:doesLineIntersectAnyConnection(sourceNode, destinationNode) then
         return false
     else
         return true
@@ -257,5 +308,48 @@ function Game:startLineRetraction(x, y)
         speed = 600
     }
 end
+
+--- Calculates the closest point of intersection between a line segment and a circle
+-- @param x1 number The x coordinate of the first point of the line segment
+-- @param y1 number The y coordinate of the first point of the line segment
+-- @param x2 number The x coordinate of the second point of the line segment
+-- @param y2 number The y coordinate of the second point of the line segment
+-- @param cx number The x coordinate of the circle center
+-- @param cy number The y coordinate of the circle center
+-- @param radius number The radius of the circle
+-- @return number, number The x and y coordinates of the closest intersection point
+function Game:getClosestPointOnCircleIntersection(x1, y1, x2, y2, cx, cy, radius)
+    local dx, dy = x2 - x1, y2 - y1
+    local fx, fy = x1 - cx, y1 - cy
+    local a = dx * dx + dy * dy
+    local b = 2 * (fx * dx + fy * dy)
+    local c = fx * fx + fy * fy - radius * radius
+    local discriminant = b * b - 4 * a * c
+    if discriminant < 0 then
+        return x2, y2
+    end
+    local t = (-b - math.sqrt(discriminant)) / (2 * a)
+    return x1 + t * dx, y1 + t * dy
+end
+
+--- Calculates the closest point of intersection between two line segments
+-- @param x1 number The x coordinate of the first point of the first line segment
+-- @param y1 number The y coordinate of the first point of the first line segment
+-- @param x2 number The x coordinate of the second point of the first line segment
+-- @param y2 number The y coordinate of the second point of the first line segment
+-- @param x3 number The x coordinate of the first point of the second line segment
+-- @param y3 number The y coordinate of the first point of the second line segment
+-- @param x4 number The x coordinate of the second point of the second line segment
+-- @param y4 number The y coordinate of the second point of the second line segment
+-- @return number, number The x and y coordinates of the intersection point
+function Game:getClosestPointOnLineIntersection(x1, y1, x2, y2, x3, y3, x4, y4)
+    local denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
+    if denom == 0 then
+        return x2, y2 -- Lines are parallel or coincident
+    end
+    local ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom
+    return x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)
+end
+
 
 return Game
