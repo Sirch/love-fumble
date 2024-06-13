@@ -60,9 +60,18 @@ function Connection:updateSpawnTimer(dt)
     end
 end
 
+function Connection:sameOwner()
+    if self.node1.owner == self.node2.owner then
+        return true
+    else
+        return false
+    end
+    
+end
+
 --- Spawns a new dot if conditions are met
 function Connection:spawnDot()
-    if self.node1.value > 1 then
+    if self.node1.value > 1 and not self:sameOwner() then
         self.node1.value = self.node1.value - 1
         table.insert(self.dots, Dot:new(self, 0, self.node1.owner))
     end
