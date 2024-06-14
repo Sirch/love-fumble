@@ -102,7 +102,18 @@ function Game:draw()
     self:drawNodes()
     self:drawDrawingLine()
     self:drawRetractingLine()
+
+    -- Draw a faint red border around the node under the mouse, if any
+    local mouseX, mouseY = love.mouse.getPosition()
+    local nodeUnderMouse = self:getNodeUnderMouse(mouseX, mouseY)
+    if nodeUnderMouse then
+        love.graphics.setColor(1, 0, 0, 0.3)  -- Faint red color with alpha
+        love.graphics.setLineWidth(2)
+        love.graphics.circle("line", nodeUnderMouse.x, nodeUnderMouse.y, nodeUnderMouse.radius + 5)
+        love.graphics.setLineWidth(1)
+    end
 end
+
 
 function Game:drawConnections()
     for _, node in ipairs(self.nodes) do
@@ -128,29 +139,29 @@ end
 
 function Game:drawDrawingLine()
     if self.isDrawingLine and self.selectedNode then
+        -- Calculate angle and start point on the circumference of the source node
         local angle = math.atan2(self.lineEnd.y - self.selectedNode.y, self.lineEnd.x - self.selectedNode.x)
         local startX, startY = self:getPointOnCircle(self.selectedNode.x, self.selectedNode.y, self.selectedNode.radius, angle)
-
+        
         -- Initialize the end coordinates as the mouse position
         local endX, endY = self.lineEnd.x, self.lineEnd.y
 
-        -- Calculate the distance between the start and end points
-        local dx = endX - startX
-        local dy = endY - startY
-        local distance = math.sqrt(dx * dx + dy * dy)
+        -- Adjust the end coordinates to handle intersections with nodes and connections
+        endX, endY = self:adjustLineForNodeIntersections(startX, startY, endX, endY)
+        endX, endY = self:adjustLineForConnectionIntersections(startX, startY, endX, endY)
 
-        -- Only draw the line if its length is greater than the radius of the starting node
-        if distance >= self.selectedNode.radius then
-            -- Adjust the end coordinates to handle intersections with nodes and connections
-            endX, endY = self:adjustLineForNodeIntersections(startX, startY, endX, endY)
-            endX, endY = self:adjustLineForConnectionIntersections(startX, startY, endX, endY)
+        -- Calculate the distance from the center of the selected node to the intersection point
+        local distance = math.sqrt((endX - self.selectedNode.x) ^ 2 + (endY - self.selectedNode.y) ^ 2)
 
-            -- Draw the line up to the intersection point
-            love.graphics.setColor(1, 0, 0)
-            love.graphics.setLineWidth(4)
-            love.graphics.line(startX, startY, endX, endY)
-            love.graphics.setLineWidth(1)
-        end
+        -- Calculate the final end point based on the calculated distance
+        local finalEndX = self.selectedNode.x + distance * math.cos(angle)
+        local finalEndY = self.selectedNode.y + distance * math.sin(angle)
+
+        -- Draw the line up to the final end point
+        love.graphics.setColor(1, 0, 0)
+        love.graphics.setLineWidth(4)
+        love.graphics.line(startX, startY, finalEndX, finalEndY)
+        love.graphics.setLineWidth(1)
     end
 end
 
@@ -386,7 +397,6 @@ function Game:adjustLineForConnectionIntersections(startX, startY, endX, endY)
     return endX, endY
 end
 
-
 --- Draws the line from the selected node to the current mouse position, considering intersections
 -- @param startX number The x coordinate of the start point
 -- @param startY number The y coordinate of the start point
@@ -400,6 +410,19 @@ function Game:drawLineWithIntersections(startX, startY, endX, endY)
     love.graphics.setLineWidth(4)
     love.graphics.line(startX, startY, endX, endY)
     love.graphics.setLineWidth(1)
+end
+
+--- Check if the mouse is over a node that can be connected
+-- @param x number The x coordinate of the mouse
+-- @param y number The y coordinate of the mouse
+-- @return table The node that can be connected to, or nil if none
+function Game:getNodeUnderMouse(x, y)
+    for _, node in ipairs(self.nodes) do
+        if node:isInside(x, y) and self.selectedNode and self:canConnect(self.selectedNode, node) then
+            return node
+        end
+    end
+    return nil
 end
 
 return Game
