@@ -116,6 +116,12 @@ function Game:drawNodes()
     end
 end
 
+--- Returns a point on the circumference of a node
+-- @param x number The x coordinate of the node
+-- @param y number The y coordinate of the node
+-- @param radius number The radius of the node
+-- @param angle number The angle in radians
+-- @return number, number The x and y coordinates on the circumference
 function Game:getPointOnCircle(x, y, radius, angle)
     return x + radius * math.cos(angle), y + radius * math.sin(angle)
 end
@@ -128,33 +134,23 @@ function Game:drawDrawingLine()
         -- Initialize the end coordinates as the mouse position
         local endX, endY = self.lineEnd.x, self.lineEnd.y
 
-        -- Check for intersections with nodes
-        for _, node in ipairs(self.nodes) do
-            if node ~= self.selectedNode then
-                if Utils.lineIntersectsCircle(startX, startY, endX, endY, node.x, node.y, node.radius) then
-                    endX, endY = self:getClosestPointOnCircleIntersection(startX, startY, endX, endY, node.x, node.y, node.radius)
-                    break
-                end
-            end
-        end
+        -- Calculate the distance between the start and end points
+        local dx = endX - startX
+        local dy = endY - startY
+        local distance = math.sqrt(dx * dx + dy * dy)
 
-        -- Check for intersections with existing connections
-        for _, node in ipairs(self.nodes) do
-            for _, connection in ipairs(node.connections) do
-                if connection.node1 ~= self.selectedNode and connection.node2 ~= self.selectedNode then
-                    if Utils.doLineSegmentsIntersect(startX, startY, endX, endY, connection.startX, connection.startY, connection.endX, connection.endY) then
-                        endX, endY = self:getClosestPointOnLineIntersection(startX, startY, endX, endY, connection.startX, connection.startY, connection.endX, connection.endY)
-                        break
-                    end
-                end
-            end
-        end
+        -- Only draw the line if its length is greater than the radius of the starting node
+        if distance >= self.selectedNode.radius then
+            -- Adjust the end coordinates to handle intersections with nodes and connections
+            endX, endY = self:adjustLineForNodeIntersections(startX, startY, endX, endY)
+            endX, endY = self:adjustLineForConnectionIntersections(startX, startY, endX, endY)
 
-        -- Draw the line up to the intersection point
-        love.graphics.setColor(1, 0, 0)
-        love.graphics.setLineWidth(4)
-        love.graphics.line(startX, startY, endX, endY)
-        love.graphics.setLineWidth(1)
+            -- Draw the line up to the intersection point
+            love.graphics.setColor(1, 0, 0)
+            love.graphics.setLineWidth(4)
+            love.graphics.line(startX, startY, endX, endY)
+            love.graphics.setLineWidth(1)
+        end
     end
 end
 
@@ -189,7 +185,10 @@ function Game:handleLeftClick(x, y)
             end
         end
     end
-    if self.selectedNode and self.selectedNode:isInside(x, y) then
+
+    if self.selectedNode then
+        local angle = math.atan2(y - self.selectedNode.y, x - self.selectedNode.x)
+        local startX, startY = self:getPointOnCircle(self.selectedNode.x, self.selectedNode.y, self.selectedNode.radius, angle)
         self.isDrawingLine = true
         self.lineEnd.x = x
         self.lineEnd.y = y
@@ -351,5 +350,56 @@ function Game:getClosestPointOnLineIntersection(x1, y1, x2, y2, x3, y3, x4, y4)
     return x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)
 end
 
+--- Checks and adjusts the line end coordinates for intersections with nodes
+-- @param startX number The x coordinate of the start point
+-- @param startY number The y coordinate of the start point
+-- @param endX number The x coordinate of the end point
+-- @param endY number The y coordinate of the end point
+-- @return number, number The adjusted end coordinates
+function Game:adjustLineForNodeIntersections(startX, startY, endX, endY)
+    for _, node in ipairs(self.nodes) do
+        if node ~= self.selectedNode then
+            if Utils.lineIntersectsCircle(startX, startY, endX, endY, node.x, node.y, node.radius) then
+                return self:getClosestPointOnCircleIntersection(startX, startY, endX, endY, node.x, node.y, node.radius)
+            end
+        end
+    end
+    return endX, endY
+end
+
+--- Checks and adjusts the line end coordinates for intersections with existing connections
+-- @param startX number The x coordinate of the start point
+-- @param startY number The y coordinate of the start point
+-- @param endX number The x coordinate of the end point
+-- @param endY number The y coordinate of the end point
+-- @return number, number The adjusted end coordinates
+function Game:adjustLineForConnectionIntersections(startX, startY, endX, endY)
+    for _, node in ipairs(self.nodes) do
+        for _, connection in ipairs(node.connections) do
+            if connection.node1 ~= self.selectedNode and connection.node2 ~= self.selectedNode then
+                if Utils.doLineSegmentsIntersect(startX, startY, endX, endY, connection.startX, connection.startY, connection.endX, connection.endY) then
+                    return self:getClosestPointOnLineIntersection(startX, startY, endX, endY, connection.startX, connection.startY, connection.endX, connection.endY)
+                end
+            end
+        end
+    end
+    return endX, endY
+end
+
+
+--- Draws the line from the selected node to the current mouse position, considering intersections
+-- @param startX number The x coordinate of the start point
+-- @param startY number The y coordinate of the start point
+-- @param endX number The x coordinate of the end point
+-- @param endY number The y coordinate of the end point
+function Game:drawLineWithIntersections(startX, startY, endX, endY)
+    endX, endY = self:adjustLineForNodeIntersections(startX, startY, endX, endY)
+    endX, endY = self:adjustLineForConnectionIntersections(startX, startY, endX, endY)
+    
+    love.graphics.setColor(1, 0, 0)
+    love.graphics.setLineWidth(4)
+    love.graphics.line(startX, startY, endX, endY)
+    love.graphics.setLineWidth(1)
+end
 
 return Game
